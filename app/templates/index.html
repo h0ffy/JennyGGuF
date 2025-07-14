@@ -3,77 +3,1050 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JennyGGUF - Vector Analyzer</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>GGUF Vector Analyzer</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent body scroll */
+            background-color: #1a1a2e; /* Dark purple background */
+            font-family: 'Courier New', Courier, monospace; /* Pixelated font */
+            color: #fff;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #headerContainer { /* Renamed from searchBarContainer for clarity */
+            position: absolute;
+            top: 30px; /* Position at the top */
+            left: 50%;
+            transform: translateX(-50%); /* Center horizontally */
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Courier New', Courier, monospace;
+            width: auto; /* Adjust width based on content */
+        }
+
+        #pageTitle { /* Renamed from purpleNetworkTitle */
+            font-size: 36px;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* Webkit scrollbar styling */
+        #mainContentContainer::-webkit-scrollbar {
+          width: 8px;
+        }
+        #mainContentContainer::-webkit-scrollbar-track {
+          background: #33334d;
+          border-radius: 4px;
+        }
+        #mainContentContainer::-webkit-scrollbar-thumb {
+          background-color: #6a44ff;
+          border-radius: 4px;
+          border: 2px solid #33334d;
+        }
+
+        /* GGUF Analyzer Styles */
+        .gguf-analyzer-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .upload-section {
+            margin-bottom: 20px;
+        }
+
+        .upload-area {
+            border: 2px dashed #6a44ff;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(51, 51, 77, 0.3);
+        }
+
+        .upload-area:hover {
+            border-color: #8566ff;
+            background: rgba(51, 51, 77, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #8566ff;
+            background: rgba(51, 51, 77, 0.5);
+            transform: scale(1.02);
+        }
+
+        .upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            opacity: 0.7;
+            color: #bd93f9;
+        }
+
+        .upload-content h3 {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: #fff;
+            margin: 0;
+        }
+
+        .upload-content p {
+            color: #a0a0c0;
+            font-size: 0.9rem;
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .analysis-section {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .analysis-header {
+            margin-bottom: 30px;
+        }
+
+        .analysis-header h2 {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .analysis-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: rgba(51, 51, 77, 0.5);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #6a44ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+            margin-bottom: 5px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .stat-value {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 2rem;
+            font-weight: 600;
+            color: #bd93f9;
+        }
+
+        .analysis-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+
+        .file-list {
+            background: rgba(51, 51, 77, 0.5);
+            border: 1px solid #6a44ff;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .file-list h3 {
+            font-family: 'Courier New', Courier, monospace;
+            color: #fff;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .file-item {
+            background: rgba(26, 26, 46, 0.8);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #6a44ff;
+            transition: transform 0.2s ease;
+        }
+
+        .file-item:hover {
+            transform: translateX(5px);
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 5px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .file-size {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .file-status {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .status-success {
+            background: rgba(40, 167, 69, 0.3);
+            color: #4caf50;
+            border: 1px solid #4caf50;
+        }
+
+        .status-processing {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+
+        .status-error {
+            background: rgba(220, 53, 69, 0.3);
+            color: #f44336;
+            border: 1px solid #f44336;
+        }
+
+        .vector-analysis {
+            background: rgba(51, 51, 77, 0.5);
+            border: 1px solid #6a44ff;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .vector-analysis h3 {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #fff;
+            margin-top: 0;
+        }
+
+        .vector-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .vector-controls select {
+            padding: 10px 15px;
+            border: 1px solid #6a44ff;
+            border-radius: 6px;
+            font-size: 1rem;
+            flex: 1;
+            background: #33334d;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .analyze-btn {
+            padding: 10px 20px;
+            background: #6a44ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .analyze-btn:hover {
+            background: #8566ff;
+            transform: translateY(-1px);
+        }
+
+        .analyze-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-container {
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 6px;
+            padding: 20px;
+            min-height: 200px;
+            border: 1px solid rgba(106, 68, 255, 0.3);
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 46, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #33334d;
+            border-top: 4px solid #6a44ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-overlay p {
+            font-size: 1.1rem;
+            color: #a0a0c0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .result-item {
+            background: rgba(51, 51, 77, 0.5);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 5px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .result-value {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            color: #a0a0c0;
+        }
+
+        /* Navigation Menu Button Styles - Unchanged */
+        #navMenuContainer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 110;
+        }
+
+        #navMenuButton {
+            background-color: #6a44ff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: background-color 0.3s ease;
+        }
+
+        #navMenuButton:hover {
+            background-color: #8566ff;
+        }
+
+        #navMenuDropdown {
+            display: none;
+            position: absolute;
+            top: 60px;
+            left: 0;
+            background-color: #33334d;
+            border: 1px solid #6a44ff;
+            border-radius: 8px;
+            min-width: 180px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            padding: 5px 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #navMenuDropdown.active {
+            display: block;
+        }
+
+        #navMenuDropdown a {
+            display: block;
+            padding: 10px 15px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        #navMenuDropdown a:hover {
+            background-color: #6a44ff;
+        }
+
+        /* Avatar Login Button Styles - Unchanged */
+        #avatarLoginContainer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 110;
+        }
+
+        #avatarButton {
+            background-color: #6a44ff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: background-color 0.3s ease;
+        }
+
+        #avatarButton:hover {
+            background-color: #8566ff;
+        }
+
+        #avatarDropdown {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background-color: #33334d;
+            border: 1px solid #6a44ff;
+            border-radius: 8px;
+            min-width: 160px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            padding: 5px 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #avatarDropdown.active {
+            display: block;
+        }
+
+        #avatarDropdown a {
+            display: block;
+            padding: 10px 15px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        #avatarDropdown a:hover {
+            background-color: #6a44ff;
+        }
+
+        .translator-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .language-selectors {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .language-selectors select {
+            flex-grow: 1;
+            padding: 10px;
+            background-color: #33334d;
+            border: 1px solid #6a44ff;
+            color: #fff;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .language-selectors span {
+            font-size: 24px;
+            color: #bd93f9;
+        }
+
+        .translator-container textarea {
+            min-height: 150px;
+            padding: 15px;
+            background-color: #33334d;
+            border: 1px solid #6a44ff;
+            color: #f8f8f2;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            resize: vertical;
+        }
+        
+        .translator-container textarea::placeholder {
+            color: #a0a0c0;
+            font-style: italic;
+        }
+
+        .translator-container button {
+            background-color: #6a44ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .translator-container button:hover {
+            background-color: #8566ff;
+        }
+
+        #translation-output-container {
+            padding: 15px;
+            background-color: rgba(51, 51, 77, 0.7);
+            border-radius: 4px;
+            min-height: 150px;
+            border: 1px dashed rgba(172, 139, 255, 0.5);
+            color: #f8f8f2;
+            white-space: pre-wrap; /* Preserve whitespace and newlines */
+            font-size: 16px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        
+        #translation-output-container:empty::before {
+             content: "Translation will appear here...";
+             color: #a0a0c0;
+             font-style: italic;
+        }
+
+        .htmx-indicator {
+            display: none;
+            color: #8be9fd;
+            text-align: center;
+        }
+        
+        .htmx-request .htmx-indicator {
+            display: block;
+        }
+        
+        .htmx-request .translator-container button {
+            pointer-events: none;
+            background-color: #8566ff;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .analysis-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .analysis-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .vector-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "htmx.org": "https://unpkg.com/htmx.org@1.9.10"
+            }
+        }
+    </script>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>JennyGGUF Vector Analyzer</h1>
-            <p>Upload and analyze GGUF model files with vector embeddings</p>
-        </header>
+    <div id="headerContainer">
+        <div id="pageTitle">GGUF Vector Analyzer</div>
+    </div>
 
-        <main class="main-content">
-            <section class="upload-section">
-                <div class="upload-area" id="uploadArea">
+    <div id="navMenuContainer">
+        <button id="navMenuButton" title="Navigation Menu">&#9776;</button> <!-- Hamburger icon -->
+        <div id="navMenuDropdown">
+            <a href="#">Home</a>
+            <a href="#">Scans</a>
+            <a href="#">Reports</a>
+            <a href="#">Settings</a>
+        </div>
+    </div>
+
+    <div id="avatarLoginContainer">
+        <button id="avatarButton" title="Login/Account">&#128100;</button> 
+        <div id="avatarDropdown">
+            <a href="#">Profile</a>
+            <a href="#">Settings</a>
+            <a href="#">Logout</a>
+        </div>
+    </div>
+
+    <div id="mainContentContainer">
+        <div class="gguf-analyzer-container">
+            <div class="upload-section">
+                <div class="upload-area" id="upload-area">
+                    <input type="file" id="file-input" multiple accept=".gguf" style="display: none;">
                     <div class="upload-content">
                         <div class="upload-icon">📁</div>
-                        <h3>Drop GGUF files here or click to browse</h3>
-                        <p>Supports .gguf files up to 500MB</p>
-                        <input type="file" id="fileInput" accept=".gguf" multiple hidden>
+                        <h3>Upload GGUF Files</h3>
+                        <p>Click to select or drag and drop GGUF files here</p>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <section class="analysis-section" id="analysisSection" style="display: none;">
+            <div class="analysis-section" id="analysis-section" style="display: none;">
                 <div class="analysis-header">
-                    <h2>Analysis Results</h2>
+                    <h2>Vector Analysis</h2>
                     <div class="analysis-stats">
                         <div class="stat-card">
-                            <span class="stat-label">Files Processed</span>
-                            <span class="stat-value" id="filesProcessed">0</span>
+                            <div class="stat-label">Files Processed</div>
+                            <div class="stat-value" id="files-processed">0</div>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-label">Total Vectors</span>
-                            <span class="stat-value" id="totalVectors">0</span>
+                            <div class="stat-label">Total Vectors</div>
+                            <div class="stat-value" id="total-vectors">0</div>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-label">Dimensions</span>
-                            <span class="stat-value" id="dimensions">0</span>
+                            <div class="stat-label">Dimensions</div>
+                            <div class="stat-value" id="dimensions">0</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="analysis-content">
-                    <div class="file-list" id="fileList"></div>
-                    
+                    <div class="file-list" id="file-list">
+                        <h3>Uploaded Files</h3>
+                        <p>No files uploaded yet</p>
+                    </div>
+
                     <div class="vector-analysis">
-                        <h3>Vector Analysis</h3>
+                        <h3>Analysis Tools</h3>
                         <div class="vector-controls">
-                            <select id="analysisType">
+                            <select id="analysis-type">
                                 <option value="similarity">Similarity Analysis</option>
                                 <option value="clustering">Clustering</option>
                                 <option value="dimensionality">Dimensionality Reduction</option>
-                                <option value="statistics">Statistics</option>
+                                <option value="statistics">Statistical Analysis</option>
                             </select>
-                            <button id="analyzeBtn" class="analyze-btn">Analyze</button>
+                            <button class="analyze-btn" id="analyze-btn">
+                                Analyze Vectors
+                            </button>
                         </div>
-                        <div class="results-container" id="resultsContainer"></div>
+                        <div class="results-container" id="results-container">
+                            <p>Select analysis type and click "Analyze Vectors" to see results</p>
+                        </div>
                     </div>
                 </div>
-            </section>
-        </main>
+            </div>
+        </div>
 
-        <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-overlay" id="loading-overlay" style="display: none;">
             <div class="loading-spinner"></div>
             <p>Processing GGUF files...</p>
         </div>
     </div>
 
-        <script src="{{ url_for('static', path='js/script.js') }}"></script>
+    <canvas id="neuralCanvas"></canvas>
+
+    <script type="module" src="script.js"></script>
+    <script type="module">
+        import 'htmx.org';
+        // htmx is now available globally as `htmx`
+    </script>
+  <script>
+class GGUFVectorAnalyzer {
+    constructor() {
+        this.apiBase = 'http://localhost:8000/api';
+        this.uploadedFiles = [];
+        this.initializeEventListeners();
+    }
+
+    initializeEventListeners() {
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const analyzeBtn = document.getElementById('analyze-btn');
+
+        // Upload area click
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            this.handleFiles(e.target.files);
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            this.handleFiles(e.dataTransfer.files);
+        });
+
+        // Analyze button
+        analyzeBtn.addEventListener('click', () => {
+            this.performAnalysis();
+        });
+    }
+
+    async handleFiles(files) {
+        const validFiles = Array.from(files).filter(file => 
+            file.name.toLowerCase().endsWith('.gguf')
+        );
+
+        if (validFiles.length === 0) {
+            alert('Please select valid GGUF files');
+            return;
+        }
+
+        this.showLoading();
+
+        for (const file of validFiles) {
+            await this.uploadFile(file);
+        }
+
+        this.hideLoading();
+        this.showAnalysisSection();
+    }
+
+    async uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch(`${this.apiBase}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            this.uploadedFiles.push({
+                id: result.file_id,
+                name: file.name,
+                size: this.formatFileSize(file.size),
+                status: 'success',
+                vectors: result.vector_count,
+                dimensions: result.dimensions
+            });
+
+            this.updateFileList();
+            this.updateStats();
+
+        } catch (error) {
+            console.error('Upload error:', error);
+            this.uploadedFiles.push({
+                name: file.name,
+                size: this.formatFileSize(file.size),
+                status: 'error',
+                error: error.message
+            });
+            this.updateFileList();
+        }
+    }
+
+    async performAnalysis() {
+        if (this.uploadedFiles.length === 0) {
+            alert('Please upload GGUF files first');
+            return;
+        }
+
+        const analysisType = document.getElementById('analysis-type').value;
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const resultsContainer = document.getElementById('results-container');
+
+        analyzeBtn.disabled = true;
+        resultsContainer.innerHTML = '<div class="loading-spinner"></div>';
+
+        try {
+            const fileIds = this.uploadedFiles
+                .filter(file => file.status === 'success')
+                .map(file => file.id);
+
+            const response = await fetch(`${this.apiBase}/analyze`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    file_ids: fileIds,
+                    analysis_type: analysisType
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const results = await response.json();
+            this.displayResults(results, analysisType);
+
+        } catch (error) {
+            console.error('Analysis error:', error);
+            resultsContainer.innerHTML = `
+                <div class="result-item">
+                    <div class="result-title">Error</div>
+                    <div class="result-value">${error.message}</div>
+                </div>
+            `;
+        } finally {
+            analyzeBtn.disabled = false;
+        }
+    }
+
+    displayResults(results, analysisType) {
+        const resultsContainer = document.getElementById('results-container');
+        let html = '';
+
+        switch (analysisType) {
+            case 'similarity':
+                html = this.renderSimilarityResults(results);
+                break;
+            case 'clustering':
+                html = this.renderClusteringResults(results);
+                break;
+            case 'dimensionality':
+                html = this.renderDimensionalityResults(results);
+                break;
+            case 'statistics':
+                html = this.renderStatisticsResults(results);
+                break;
+        }
+
+        resultsContainer.innerHTML = html;
+    }
+
+    renderSimilarityResults(results) {
+        if (!results.similarities || results.similarities.length === 0) {
+            return '<p>No similarity results found.</p>';
+        }
+
+        let html = '<h4>Top Similar Vector Pairs</h4>';
+        results.similarities.forEach(sim => {
+            html += `
+                <div class="result-item">
+                    <div class="result-title">Vectors ${sim.vector1_id} ↔ ${sim.vector2_id}</div>
+                    <div class="result-value">Similarity: ${sim.similarity.toFixed(4)}</div>
+                </div>
+            `;
+        });
+
+        return html;
+    }
+
+    renderClusteringResults(results) {
+        if (!results.clusters) {
+            return '<p>No clustering results found.</p>';
+        }
+
+        let html = '<h4>Cluster Analysis</h4>';
+        html += `
+            <div class="result-item">
+                <div class="result-title">Number of Clusters</div>
+                <div class="result-value">${results.num_clusters}</div>
+            </div>
+        `;
+
+        results.clusters.forEach((cluster, index) => {
+            html += `
+                <div class="result-item">
+                    <div class="result-title">Cluster ${index + 1}</div>
+                    <div class="result-value">${cluster.size} vectors</div>
+                </div>
+            `;
+        });
+
+        return html;
+    }
+
+    renderDimensionalityResults(results) {
+        if (!results.reduced_dimensions) {
+            return '<p>No dimensionality reduction results found.</p>';
+        }
+
+        let html = '<h4>Dimensionality Reduction</h4>';
+        html += `
+            <div class="result-item">
+                <div class="result-title">Original Dimensions</div>
+                <div class="result-value">${results.original_dimensions}</div>
+            </div>
+            <div class="result-item">
+                <div class="result-title">Reduced Dimensions</div>
+                <div class="result-value">${results.reduced_dimensions}</div>
+            </div>
+            <div class="result-item">
+                <div class="result-title">Explained Variance</div>
+                <div class="result-value">${(results.explained_variance * 100).toFixed(2)}%</div>
+            </div>
+        `;
+
+        return html;
+    }
+
+    renderStatisticsResults(results) {
+        if (!results.statistics) {
+            return '<p>No statistics results found.</p>';
+        }
+
+        const stats = results.statistics;
+        let html = '<h4>Vector Statistics</h4>';
+        
+        html += `
+            <div class="result-item">
+                <div class="result-title">Mean Magnitude</div>
+                <div class="result-value">${stats.mean_magnitude.toFixed(4)}</div>
+            </div>
+            <div class="result-item">
+                <div class="result-title">Standard Deviation</div>
+                <div class="result-value">${stats.std_deviation.toFixed(4)}</div>
+            </div>
+            <div class="result-item">
+                <div class="result-title">Min Value</div>
+                <div class="result-value">${stats.min_value.toFixed(4)}</div>
+            </div>
+            <div class="result-item">
+                <div class="result-title">Max Value</div>
+                <div class="result-value">${stats.max_value.toFixed(4)}</div>
+            </div>
+        `;
+
+        return html;
+    }
+
+    updateFileList() {
+        const fileList = document.getElementById('file-list');
+        let html = '<h3>Uploaded Files</h3>';
+
+        this.uploadedFiles.forEach(file => {
+            const statusClass = `status-${file.status}`;
+            html += `
+                <div class="file-item">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${file.size}</div>
+                    <div class="file-status ${statusClass}">
+                        ${file.status === 'success' ? 'Ready' : 
+                          file.status === 'processing' ? 'Processing...' : 
+                          'Error'}
+                    </div>
+                    ${file.vectors ? `<div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                        ${file.vectors} vectors, ${file.dimensions}D
+                    </div>` : ''}
+                </div>
+            `;
+        });
+
+        fileList.innerHTML = html;
+    }
+
+    updateStats() {
+        const successfulFiles = this.uploadedFiles.filter(f => f.status === 'success');
+        const totalVectors = successfulFiles.reduce((sum, file) => sum + (file.vectors || 0), 0);
+        const dimensions = successfulFiles.length > 0 ? successfulFiles[0].dimensions : 0;
+
+        document.getElementById('files-processed').textContent = successfulFiles.length;
+        document.getElementById('total-vectors').textContent = totalVectors.toLocaleString();
+        document.getElementById('dimensions').textContent = dimensions;
+    }
+
+    showAnalysisSection() {
+        document.getElementById('analysis-section').style.display = 'block';
+    }
+
+    showLoading() {
+        document.getElementById('loading-overlay').style.display = 'flex';
+    }
+
+    hideLoading() {
+        document.getElementById('loading-overlay').style.display = 'none';
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+}
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+    new GGUFVectorAnalyzer();
+});
+    
+  </script>
 </body>
 </html>
-
