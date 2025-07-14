@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JennyGGUF - Vector Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cal+Sans:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>JennyGGUF Vector Analyzer</h1>
+            <p>Upload and analyze GGUF model files with vector embeddings</p>
+        </header>
+
+        <main class="main-content">
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📁</div>
+                        <h3>Drop GGUF files here or click to browse</h3>
+                        <p>Supports .gguf files up to 500MB</p>
+                        <input type="file" id="fileInput" accept=".gguf" multiple hidden>
+                    </div>
+                </div>
+            </section>
+
+            <section class="analysis-section" id="analysisSection" style="display: none;">
+                <div class="analysis-header">
+                    <h2>Analysis Results</h2>
+                    <div class="analysis-stats">
+                        <div class="stat-card">
+                            <span class="stat-label">Files Processed</span>
+                            <span class="stat-value" id="filesProcessed">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Total Vectors</span>
+                            <span class="stat-value" id="totalVectors">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Dimensions</span>
+                            <span class="stat-value" id="dimensions">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analysis-content">
+                    <div class="file-list" id="fileList"></div>
+                    
+                    <div class="vector-analysis">
+                        <h3>Vector Analysis</h3>
+                        <div class="vector-controls">
+                            <select id="analysisType">
+                                <option value="similarity">Similarity Analysis</option>
+                                <option value="clustering">Clustering</option>
+                                <option value="dimensionality">Dimensionality Reduction</option>
+                                <option value="statistics">Statistics</option>
+                            </select>
+                            <button id="analyzeBtn" class="analyze-btn">Analyze</button>
+                        </div>
+                        <div class="results-container" id="resultsContainer"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner"></div>
+            <p>Processing GGUF files...</p>
+        </div>
+    </div>
+
+        <script src="{{ url_for('static', path='js/script.js') }}"></script>
+</body>
+</html>
+
